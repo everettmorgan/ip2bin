@@ -1,12 +1,10 @@
-function intToXBit(num, bits) {
-        const padding = new Array(bits - 1).fill('0').join('');
+function octet(num) {
+        const padding = new Array(7).fill('0').join('');
         const result = padding + (parseInt(num) >> 0).toString(2);
         return result.slice(result.length - 8, result.length);
 }
 
-const intTo8Bit = (num) => intToXBit(num, 8);
-
-module.exports = function IPv4(input, showBoundaryLine) {
+function IPv4(input) {
         this.input = input;
         this.binaryAddress = null;
         this.binarySubnetMask = null;
@@ -15,7 +13,8 @@ module.exports = function IPv4(input, showBoundaryLine) {
 
         const [ip, cidr] = input.split('/');
 
-        let dottedCidr = [];
+        const dottedCidr = [];
+        const binaryCidr = [];
 
         if (cidr) {
                 const bits = [128, 64, 32, 16, 8, 4, 2, 1];
@@ -25,47 +24,45 @@ module.exports = function IPv4(input, showBoundaryLine) {
                         // eslint-disable-next-line no-param-reassign
                         .reduce((acc, item) => acc += item, 0);
 
-                dottedCidr = [
-                        getOctet(0),
-                        parsed - 8 > 0 ? getOctet(8) : 0,
-                        parsed - 16 > 0 ? getOctet(16) : 0,
-                        parsed - 24 > 0 ? getOctet(24) : 0,
-                ];
-        }
+                dottedCidr.push(getOctet(0));
+                dottedCidr.push(parsed - 8 > 0 ? getOctet(8) : 0);
+                dottedCidr.push(parsed - 16 > 0 ? getOctet(16) : 0);
+                dottedCidr.push(parsed - 24 > 0 ? getOctet(24) : 0);
 
-        let binaryCidr = [];
-
-        if (dottedCidr.length) {
-                binaryCidr = dottedCidr.map((octet) => intTo8Bit(octet));
+                binaryCidr.push(octet(dottedCidr[0]));
+                binaryCidr.push(octet(dottedCidr[1]));
+                binaryCidr.push(octet(dottedCidr[2]));
+                binaryCidr.push(octet(dottedCidr[3]));
         }
 
         const [a, b, c, d] = ip.split('.');
 
-        const binaryIP = [
-                intTo8Bit(a),
-                intTo8Bit(b),
-                intTo8Bit(c),
-                intTo8Bit(d),
-        ];
+        const binaryIP = [octet(a), octet(b), octet(c), octet(d)];
 
-        this.binaryAddress = binaryIP.join('.');
-        this.binarySubnetMask = binaryCidr.join('.');
         this.dottedAddress = ip;
         this.dottedCidr = dottedCidr.join('.');
+        this.binaryAddress = binaryIP.join('.');
+        this.binarySubnetMask = binaryCidr.join('.');
 
-        this.getBinaryRepresentation = function () {
+        this.getBinaryRepresentation = function (showBoundaryLine) {
                 let subnetMask = this.binarySubnetMask;
-                let { binaryAddress } = this;
+                let address = this.binaryAddress;
                 if (showBoundaryLine) {
                         const parsedCidr = parseInt(cidr, 10);
                         let bump = 0;
                         if (parsedCidr > 8) bump += 1;
                         if (parsedCidr > 16) bump += 1;
                         if (parsedCidr > 24) bump += 1;
-                        subnetMask = `${subnetMask.slice(0, parsedCidr + bump)}|${subnetMask.slice(parsedCidr + bump, subnetMask.length)}`;
-                        binaryAddress = `${binaryAddress.slice(0, parsedCidr + bump)}|${binaryAddress.slice(parsedCidr + bump, binaryAddress.length)}`;
+
+                        const a = subnetMask.slice(0, parsedCidr + bump);
+                        const b = subnetMask.slice(parsedCidr + bump, subnetMask.length);
+                        subnetMask = `${a}|${b}`;
+
+                        const c = address.slice(0, parsedCidr + bump);
+                        const d = address.slice(parsedCidr + bump, address.length);
+                        address = `${c}|${d}`;
                 }
-                return binaryAddress + (subnetMask ? `/${subnetMask}` : '');
+                return address + (subnetMask ? `/${subnetMask}` : '');
         };
 
         this.getDottedRepresentation = function () {
@@ -73,8 +70,4 @@ module.exports = function IPv4(input, showBoundaryLine) {
         };
 }
 
-function test() {
-        const ip = new IPv4('60.0.0.0/28', true);
-
-        console.log(...ip.getBinaryRepresentation().split('/').map((item) => `\`${item}\``));
-}
+module.exports = IPv4;

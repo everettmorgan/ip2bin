@@ -1,20 +1,25 @@
 # ip2bin
 
 ```javascript
-const ip = new IPv4('135.15.10.138/16');
+const IPv4 = require('./index');
+
+const ip = new IPv4('10.0.0.1/21');
 
 console.log(ip);
 // IPv4 {
-//   input: '135.15.10.138/16',
-//   binaryAddress: '10000111.00001111.00001010.10001010',
-//   binarySubnetMask: '11111111.11111111.00000000.00000000',
-//   dottedAddress: '135.15.10.138',
-//   dottedCidr: '255.255.0.0'
-// } 
+//         input: '10.0.0.1/21',
+//         binaryAddress: '00001010.00000000.00000000.00000001',
+//         binarySubnetMask: '11111111.11111111.11111000.00000000',
+//         dottedAddress: '10.0.0.1',
+//         dottedCidr: '255.255.248.0',
+//         getBinaryRepresentation: [Function (anonymous)],
+//         getDottedRepresentation: [Function (anonymous)]
+// }
 
-console.log(ip.getBinaryRepresentation());
-// 10000111.00001111.00001010.10001010/11111111.11111111.00000000.00000000 
+
+console.log(ip.getBinaryRepresentation(true));
+// 00001010.00000000.00000|000.00000001/11111111.11111111.11111|000.00000000
 
 console.log(ip.getDottedRepresentation());
-// 135.15.10.138/255.255.0.0
+// 10.0.0.1/255.255.248.0
 ```
